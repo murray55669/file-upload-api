@@ -1,4 +1,6 @@
-A demo REST API designed to upload large files to a server.
+### Readme
+
+A demo REST API designed to upload large files to a server. Build and run using standard Maven methods. 
 
 ---
 
@@ -17,10 +19,11 @@ where `fileData` is base64-encoded file contents.
 
 `PUT /file/multipart/` and `PUT /file/{fileId}/chunk/` combined allow a file to be sent in chunks. 
 
-The first request should be to `/file/multipart/``, and contain the `fileName` and `numChunks` (as well as the first chunk of `fileData`), and will return an ID. 
+The first request should be to `/file/multipart/`, and contain the `fileName` and `numChunks`, as well as the first chunk of `fileData`, and will return a fileId. 
 
-Subsequent chunk `PUT`s for the same file should be to `/file/{fileId}/chunk/` contain a `chunkIndex` (zero indexed), and the relevant chunk of `fileData`.
-First request:
+Subsequent chunk `PUT`s for the same file should be to `/file/{fileId}/chunk/`, and contain a `chunkIndex` (zero indexed), and the relevant chunk of `fileData`. Example flow shown below.
+
+First request (via `PUT /file/multipart/`):
 ```json
 {
     "fileName": "myFileName.txt",
@@ -38,14 +41,14 @@ Example response:
     "fileName": "myFileName.txt"
 }
 ```
-Further requests:
+Further requests... (via `PUT /file/123/chunk`):
 ```json
 {
     "chunkIndex": 2,
     "fileData": "ZW5jb2RlZA=="
 }
 ```
-And corresponding response:
+...And corresponding responses..:
 ```json
 {
     "fileId": 123,
@@ -55,7 +58,7 @@ And corresponding response:
     "fileName": "myFileName.txt"
 }
 ```
-...
+...until finally:
 ```json
 {
     "fileId": 123,
