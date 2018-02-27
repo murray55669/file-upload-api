@@ -32,8 +32,10 @@ Example response:
 ```json
 {
     "fileId": 123,
+    "message": "Chunk uploaded successfully",
     "expectedChunks": 3,
-    "receivedChunks": 1
+    "receivedChunks": 1,
+    "fileName": "myFileName.txt"
 }
 ```
 Further requests:
@@ -49,6 +51,17 @@ And corresponding response:
     "fileId": 123,
     "message": "Chunk uploaded successfully",
     "expectedChunks": 3,
-    "receivedChunks": 2
+    "receivedChunks": 2,
+    "fileName": "myFileName.txt"
+}
+```
+...
+```json
+{
+    "fileId": 123,
+    "message": "Multi-chunk file uploaded successfully",
+    "expectedChunks": 3,
+    "receivedChunks": 3,
+    "fileName": "myFileName.txt"
 }
 ```
