@@ -47,9 +47,9 @@ public class ChunkedFileBuilder {
     }
 
     public synchronized ResponseEntity<FileResponse> handleReceivedChunk(Integer chunkIndex, String base64Content) {
-        if (numChunks == null) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, 1).setMessage("Missing required field: numChunks"), HttpStatus.BAD_REQUEST);
-        if (chunkIndex == null) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, 1).setMessage("Missing required field: chunkIndex"), HttpStatus.BAD_REQUEST);
-        if (chunkIndex >= numChunks) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, 1).setMessage(String.format("Invalid chunkIndex, was %d, expected number of chunks was %d", chunkIndex, numChunks)), HttpStatus.BAD_REQUEST);
+        if (numChunks == null) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, receivedChunks.size()).setMessage("Missing required field: numChunks"), HttpStatus.BAD_REQUEST);
+        if (chunkIndex == null) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, receivedChunks.size()).setMessage("Missing required field: chunkIndex"), HttpStatus.BAD_REQUEST);
+        if (chunkIndex >= numChunks) return new ResponseEntity<>(new FileResponse(fileId, fileName, numChunks, receivedChunks.size()).setMessage(String.format("Invalid chunkIndex, was %d, expected number of chunks was %d", chunkIndex, numChunks)), HttpStatus.BAD_REQUEST);
         FileResponse resp = new FileResponse(fileId, fileName, numChunks, receivedChunks.size());
         if (fileName == null) return new ResponseEntity<>(resp.setMessage("Missing required field: fileName"), HttpStatus.BAD_REQUEST);
         if (base64Content == null) return new ResponseEntity<>(resp.setMessage("Missing required field: fileName"), HttpStatus.BAD_REQUEST);
@@ -59,6 +59,7 @@ public class ChunkedFileBuilder {
                 return new ResponseEntity<>(resp.setMessage("Single-chunk file uploaded successfully"), HttpStatus.OK);
             } else {
                 doSaveChunk(chunkIndex, base64Content);
+                resp.setReceivedChunks(receivedChunks.size());
                 if (numChunks == receivedChunks.size()) {
                     doAssembleChunks();
                     return new ResponseEntity<>(resp.setMessage("Multi-chunk file uploaded successfully"), HttpStatus.OK);
