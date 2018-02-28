@@ -32,6 +32,7 @@ public class ChunkedFileBuilder {
         this.numChunks = numChunks;
 
         receivedChunks = new HashSet<>();
+        tempDir = null;
     }
 
     public int getFileId() {
@@ -46,7 +47,7 @@ public class ChunkedFileBuilder {
         return receivedChunks.size();
     }
 
-    public synchronized ResponseEntity<FileResponse> handleReceivedChunk(Integer chunkIndex, String base64Content) {
+    public ResponseEntity<FileResponse> handleReceivedChunk(Integer chunkIndex, String base64Content) {
         FileResponse resp = new FileResponse(fileId, fileName, numChunks, receivedChunks.size());
         if (numChunks == null) return new ResponseEntity<>(resp.setMessage("Missing required field: numChunks"), HttpStatus.BAD_REQUEST);
         if (chunkIndex == null) return new ResponseEntity<>(resp.setMessage("Missing required field: chunkIndex"), HttpStatus.BAD_REQUEST);
@@ -74,11 +75,20 @@ public class ChunkedFileBuilder {
         }
     }
 
+    private final Object CHUNK_EXISTS_LOCK = new Object();
     private void doSaveChunk(int chunkIndex, String base64Content) throws IOException {
-        if (!receivedChunks.contains(chunkIndex)) {
-            receivedChunks.add(chunkIndex);
-            tempDir = TEMP_DIR.toPath().resolve("file-" + fileId).toFile();
-            if (!tempDir.exists() && !tempDir.mkdir()) throw new IOException("Failed to initialise file directory");
+        boolean doWrite = false;
+        synchronized (CHUNK_EXISTS_LOCK) {
+            if (!receivedChunks.contains(chunkIndex)) {
+                receivedChunks.add(chunkIndex);
+                doWrite = true;
+                if (tempDir == null) {
+                    tempDir = TEMP_DIR.toPath().resolve("file-" + fileId).toFile();
+                    if (!tempDir.exists() && !tempDir.mkdir()) throw new IOException("Failed to initialise file directory");
+                }
+            }
+        }
+        if (doWrite) {
             doSaveToPath(getChunkPath(chunkIndex), base64Content);
         }
     }
