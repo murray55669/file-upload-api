@@ -16,7 +16,17 @@ The onus is placed entirely on the user to send sensible data (although some bas
 
 ###### 2. Implement it any language that you prefer.
 
-The implementation is in Java, using the Spring framework. It utilises JSON for all incoming and outgoing data, and base64 encoding to transfer the file content. This is less than ideal, as base64 inflates the data by up to a third. A better implementation would perhaps use multipart/form methods to directly transfer file bytes. Internally, the partially uploaded files are stored in a temporary folder on the server's filesystem. Once a complete set of chunks has been received, the partial files are streamed byte-by-byte (which could likely benefit from a buffering mechanism) and combined to form the final file. Metadata for the partial uploads is kept purely in memory, as is the auto-incrementing fileId. This presents a significant problem if the server is ever restarted (and is a memory leak, besides), and should ideally be moved to more permanent storage, such as a persistent database. I suspect the partial files, too, could benefit from a more robust storage/retrieval solution, although I have not researched enough to confirm this. Additionally, the file IDs are stored as integers, which should be switched to longs, a generally accepted and sensible convention, and there is no hard restriction on the size of each chunk (although the Spring framework used has a default). Besides the problems mentioned, the overall implementation is extremely minimal, and this engineer has no experience building REST APIs (and little enough using Spring) so could undoubtedly be improved throughout.
+The implementation is in Java, using the Spring framework. 
+
+JSON is used for all incoming and outgoing data, and base64 encoding to transfer the file content. This is less than ideal, as base64 inflates the data by up to a third. A better implementation could use multipart/form methods to directly transfer file bytes. 
+
+Internally, the partially uploaded files are stored in a temporary folder on the server's filesystem. Once a complete set of chunks has been received, the partial files are streamed byte-by-byte (which could benefit from a buffering mechanism) and combined to form the final file. 
+
+Metadata for the partial uploads is kept purely in memory, as is the auto-incrementing fileId. This presents a significant problem if the server is ever restarted (and is a memory leak, besides), and should ideally be moved to more permanent storage, such as a persistent database. The partial files, too, could benefit from a more robust storage/retrieval solution. 
+
+The file IDs are stored as integers, which should be switched to longs, a generally accepted and sensible convention, and there is no hard restriction on the size of each chunk (although the Spring framework used has a default). 
+
+Besides the problems mentioned, the overall implementation is extremely minimal, and as this engineer has no experience building REST APIs (and little enough using Spring) could undoubtedly be improved throughout.
 
 ###### 3. Explain what should be changed when:
 ###### -- a. We need authentication for uploading;
@@ -25,8 +35,16 @@ A plugin called "Spring Security" is available for the Spring framework, which c
 
 ###### -- b. We need a set of API to show uploaded files and progress;
 
-A handful of `GET` endpoints could be implemented, e.g. one to list all files (which should be paginated), one to retrieve a file by ID (potentially returned in chunks), one to retrieve upload progress (chunks received/chunks total) by fileId, and so on. Such endpoints would be trivially easy to create were the server using a database for storage, as discussed above.
+A handful of `GET` endpoints could be implemented, for example:
+ 
+ - one to list all files (which should be paginated)
+ - one to retrieve a file by ID (potentially returned in chunks)
+ - one to retrieve upload progress (chunks received/chunks total) by fileId
+  
+  Such endpoints would be trivially easy to create were the server using a database for storage, as discussed above.
 
 ###### -- c. Resumable uploads.
 
-This is effectively supported, as files are only removed from tracking on server shutdown or when an upload completes. A user can submit chunks as sporadically as they require, and the current implementation should handle it (although there is no endpoint to provide e.g. the list of received chunks for a given fileId). This in itself is a design flaw, but it wouldn't be hard to imagine converting the application to use a persistent database (as detailed above) and periodically flushing abandoned uploads; in this case an endpoint could be provided to flag an incomplete upload so as not to have it cleaned, thus allowing it to be resumed at a later time. A sensible grace period (preferably configurable) would ensure e.g. a temporary network outage wouldn't cause a partially completed upload to be immediately flushed. 
+This is effectively supported, as files are only removed from tracking on server shutdown or when an upload completes. A user can submit chunks as sporadically as they require, and the current implementation should handle it (although there is no endpoint to provide e.g. the list of received chunks for a given fileId). 
+
+This in itself is a design flaw, but it wouldn't be hard to imagine converting the application to use a persistent database (as detailed above) and periodically flushing abandoned uploads; in this case an endpoint could be provided to flag an incomplete upload so as not to have it cleaned, thus allowing it to be resumed at a later time. A sensible grace period (preferably configurable) would ensure e.g. a temporary network outage wouldn't cause a partially completed upload to be immediately flushed. 
